@@ -1,6 +1,6 @@
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urldefrag
 from helper_functions import *
 
 PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE: int = 50
@@ -12,6 +12,7 @@ def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
         url = anchor.get("href")
         if (url):
             urls.append(url)
+    return urls
 
 def get_text_in_page(soup: BeautifulSoup):
     return soup.get_text(separator=" ", strip=True).split(" ")
@@ -26,14 +27,13 @@ def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
             freqs[word] = 0
     return freqs
 
-def defragment_url(url: str, base_url: str) -> str:
+def defrag_and_clean_url(url: str, base_url: str) -> str:
     """Defragment a :url:
 
     :param url: The URL to defragment (could be a reference or absolute)
     :param base_url: The URL of the page where you found :url:"
     """
-    p = urlparse(urljoin(base_url, url))
-    return f"{p.scheme}://{p.netloc}{p.path}?{p.query}"
+    return urldefrag(urljoin(base_url, url))[0]
 
 # TODO: move all of the above functions to helper_functions.py
 
@@ -43,7 +43,7 @@ def scraper(url, resp):
     links: list = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
-def extract_next_links(url, resp):
+def extract_next_links(base_url, resp):
     """Currently has the following features:
         - URL defragmentation
         - Filter out pages with little to no text
@@ -52,7 +52,7 @@ def extract_next_links(url, resp):
         - Tracks visited URLs
     """
     # Implementation required.
-    # url: the URL that was used to get the page
+    # base_url: the URL that was used to get the page
     # resp.url: the actual url of the page
     # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
     # resp.error: when status is not 200, you can check the error here, if needed.
@@ -64,14 +64,14 @@ def extract_next_links(url, resp):
     # Handle defragmentation of URLs, 
     # filter out little/no text pages, near/true dupes, bad statuses
 
-    visited_urls.add(url)
+    visited_urls.add(base_url)
     if (resp.status != 200):
-        print_with_color("ERROR:", resp.error)
+        print_red("ERROR:", base_url, resp.error)
         return list()
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
     text: list[str] = get_text_in_page(soup)
-    urls: list[str] = [defragment_url(url) for url in get_urls_in_page(soup)]
+    urls: list[str] = [defrag_and_clean_url(url, base_url) for url in get_urls_in_page(soup)]
     frequencies = calculate_word_frequencies(text)
     
     if len(text) < PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE:
@@ -90,13 +90,32 @@ def is_valid(url):
     if url in visited_urls:
         return False
 
-    # TODO: handle domain restrictions and traps
-    if urlparse(url).netloc in []
-
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]):
+        if parsed.scheme not in ("http", "https"):
             return False
+
+        # Handle domain restrictions
+        if not re.match(
+            r"^.*ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu(.*)$",
+            parsed.netloc
+        ): return False
+
+# TODO: finish trap handling      
+# ** Handle traps section **
+        # Possible calendar blocker - might not be good because of sites like these:
+        # https://ics.uci.edu/2022/06/27/ics-project-expo-strengthens-industry-engagement-and-showcases-student-talent/
+        # It's like a newsletter, so it might be worth scraping and might not cause an infinte loop,
+        # unless there's a way to keep advancing the day +1 and -1 infinetely
+        if re.match(r"\/\d+\/\d+\/\d+\/", parsed.path.lower()):
+            return False
+
+        # Prevent infinite pagination by stopping "/page/3" URLs
+        if re.match(r"\/page\/\d+\/?", parsed.path.lower()):
+            return False
+
+# ** End of handle traps section **
+
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -108,5 +127,5 @@ def is_valid(url):
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
     except TypeError:
-        print ("TypeError for ", parsed)
+        print("TypeError for ", parsed)
         raise
