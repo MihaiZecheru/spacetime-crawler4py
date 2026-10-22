@@ -1,7 +1,8 @@
 from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup
 
-
+# with a 64-bit simhash, a threshold of 3 maps to 95.3% similarity. 6 maps to 90.6% similarity.
+SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 3
 
 def print_red(*args, **kwargs) -> None:
     message = " ".join(str(a) for a in args)
@@ -37,7 +38,7 @@ def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
             freqs[word] = 0
     return freqs
 
-def fletcher_checksum(content: list[str]) -> int:
+def calculate_checksum(content: list[str]) -> int:
     '''
     Converts content into a checksum using Fletcher-16 method. 
 
@@ -64,15 +65,24 @@ def is_exact_match(content: list[str], checksums: set[int]) -> bool:
     :param content: list of words
     :param checksums: set of checksums
     '''
-    checksum: int = fletcher_checksum(content)
+    checksum: int = calculate_checksum(content)
 
     return checksum in checksums
 
+def calculate_simhash(content: dict[str, int]) -> int:
+    # TODO: implement simhash calculator
+    
+    return 0
+
 def is_simhash_match(content: dict[str, int], simhashes: set[int]) -> bool:
     '''
-    
+    Compares the content's simhash to a list of existing simhashes.
+    - If it exceeds any simhashes' SIMHASH_BIT_DIFFERENCE_THRESHOLD, return True.
+    - Else, return False.
     
     :param content: dict of words with frequencies
     :param simhashes: set of simhashes, stored as integers
     '''
-    return False
+    simhash: int = calculate_simhash(content)
+
+    return simhash in simhashes

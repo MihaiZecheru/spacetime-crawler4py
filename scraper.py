@@ -48,8 +48,8 @@ def extract_next_links(base_url, resp):
     if is_exact_match(text, visited_checksums) or is_simhash_match(frequencies, visited_simhashes):
         return list()
     else:
-        visited_checksums.add(fletcher_checksum(text))
-        # TODO: visited_simhashes.add(...(frequencies))
+        visited_checksums.add(calculate_checksum(text))
+        # TODO: visited_simhashes.add(calculate_simhash(frequencies))
 
     return list(urls)
 
