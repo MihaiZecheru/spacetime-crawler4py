@@ -1,6 +1,30 @@
 import re
+from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from helper_functions import *
+
+def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
+    """Get all the <a>.href that's in the page using beautiful soup"""
+    urls = []
+    for anchor in soup.find_all("a"):
+        url = anchor.get("href")
+        if (url):
+            urls.append(url)
+
+def get_text_in_page(soup: BeautifulSoup):
+    return soup.get_text(separator=" ", strip=True).split(" ")
+
+def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
+    freqs = {}
+    for word in words:
+        count = freqs.get(word)
+        if count:
+            freqs[word] += 1
+        else:
+            freqs[word] = 0
+    return freqs
+
+# TODO: move above functions to helper_functions.py
 
 def scraper(url, resp):
     links: list = extract_next_links(url, resp)
@@ -24,12 +48,15 @@ def extract_next_links(url, resp):
         print_with_color("ERROR:", resp.error)
         return list()
 
-    content = resp.raw_response.content    
-    if is_exact_match(content) or is_simhash_match(content):
+    soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
+    urls: list[str] = get_urls_in_page(soup)
+    text: list[str] = get_text_in_page(soup)
+    frequencies = calculate_word_frequencies(text)
+
+    if is_exact_match(text) or is_simhash_match(frequencies):
         return list()
 
-    print(resp.raw_response.url + " PAGE CONTENT:", content)
-    return list()
+    return list(urls)
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
