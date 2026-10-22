@@ -45,7 +45,7 @@ def extract_next_links(base_url, resp):
     if len(text) < PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE:
         return list()
 
-    if is_exact_match(text, visited_checksums) or is_simhash_match(frequencies):
+    if is_exact_match(text, visited_checksums) or is_simhash_match(frequencies, visited_simhashes):
         return list()
     else:
         visited_checksums.add(fletcher_checksum(text))

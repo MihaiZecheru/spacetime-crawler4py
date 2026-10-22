@@ -47,29 +47,32 @@ def fletcher_checksum(content: list[str]) -> int:
     ordersum: int = 0
 
     for word in content:
+        word += '\0'
         for character in word: 
             wordsum += ord(character)
             ordersum += wordsum
 
-    return (ordersum % 255 << 8) | wordsum % 255
+    return ((ordersum % 255) << 8) | (wordsum % 255)
 
-def is_exact_match(content: list[str], checksums: list[int]) -> bool:
+def is_exact_match(content: list[str], checksums: set[int]) -> bool:
     '''
     Compares the content's checksum to a list of existing checksums.
     - If there's a match, return True.
     - If there's no match, return False.
-
+    - Due to Fletcher-16's modulus methodology, false positives may occur with a len(content)/65,025 chance.
+    
     :param content: list of words
-    :param checksums: list of checksums
+    :param checksums: set of checksums
     '''
     checksum: int = fletcher_checksum(content)
 
     return checksum in checksums
 
-def is_simhash_match(content: dict[str, int], simhashes: int) -> bool:
+def is_simhash_match(content: dict[str, int], simhashes: set[int]) -> bool:
     '''
     
     
-    :param: content - dict of words with frequencies, sorted by most common
+    :param content: dict of words with frequencies
+    :param simhashes: set of simhashes, stored as integers
     '''
     return False
