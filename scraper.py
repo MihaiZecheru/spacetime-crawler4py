@@ -1,7 +1,9 @@
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from helper_functions import *
+
+PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE: int = 50
 
 def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
     """Get all the <a>.href that's in the page using beautiful soup"""
@@ -24,13 +26,31 @@ def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
             freqs[word] = 0
     return freqs
 
-# TODO: move above functions to helper_functions.py
+def defragment_url(url: str, base_url: str) -> str:
+    """Defragment a :url:
+
+    :param url: The URL to defragment (could be a reference or absolute)
+    :param base_url: The URL of the page where you found :url:"
+    """
+    p = urlparse(urljoin(base_url, url))
+    return f"{p.scheme}://{p.netloc}{p.path}?{p.query}"
+
+# TODO: move all of the above functions to helper_functions.py
+
+visited_urls: set[str] = set()
 
 def scraper(url, resp):
     links: list = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
+    """Currently has the following features:
+        - URL defragmentation
+        - Filter out pages with little to no text
+        - Near/true dupe detection
+        - Bad statuses
+        - Tracks visited URLs
+    """
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -44,14 +64,18 @@ def extract_next_links(url, resp):
     # Handle defragmentation of URLs, 
     # filter out little/no text pages, near/true dupes, bad statuses
 
+    visited_urls.add(url)
     if (resp.status != 200):
         print_with_color("ERROR:", resp.error)
         return list()
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
-    urls: list[str] = get_urls_in_page(soup)
     text: list[str] = get_text_in_page(soup)
+    urls: list[str] = [defragment_url(url) for url in get_urls_in_page(soup)]
     frequencies = calculate_word_frequencies(text)
+    
+    if len(text) < PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE:
+        return list()
 
     if is_exact_match(text) or is_simhash_match(frequencies):
         return list()
@@ -63,7 +87,11 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
 
+    if url in visited_urls:
+        return False
+
     # TODO: handle domain restrictions and traps
+    if urlparse(url).netloc in []
 
     try:
         parsed = urlparse(url)
