@@ -1,8 +1,9 @@
 import re
 from urllib.parse import urlparse
+from helper_functions import *
 
 def scraper(url, resp):
-    links = extract_next_links(url, resp)
+    links: list = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
@@ -19,16 +20,15 @@ def extract_next_links(url, resp):
     # Handle defragmentation of URLs, 
     # filter out little/no text pages, near/true dupes, bad statuses
 
-    # TODO: true dupes check using checksum
-
-
-    # TODO: near dupes check using SimHash
-
-
-    # TODO: bad status check
     if (resp.status != 200):
-        pass
+        print_with_color("ERROR:", resp.error)
+        return list()
 
+    content = resp.raw_response.content    
+    if is_exact_match(content) or is_simhash_match(content):
+        return list()
+
+    print(resp.raw_response.url + " PAGE CONTENT:", content)
     return list()
 
 def is_valid(url):
