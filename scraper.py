@@ -1,43 +1,11 @@
 import re
-from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin, urldefrag
 from helper_functions import *
 
 PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE: int = 50
 
-def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
-    """Get all the <a>.href that's in the page using beautiful soup"""
-    urls = []
-    for anchor in soup.find_all("a"):
-        url = anchor.get("href")
-        if (url):
-            urls.append(url)
-    return urls
-
-def get_text_in_page(soup: BeautifulSoup):
-    return soup.get_text(separator=" ", strip=True).split(" ")
-
-def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
-    freqs = {}
-    for word in words:
-        count = freqs.get(word)
-        if count:
-            freqs[word] += 1
-        else:
-            freqs[word] = 0
-    return freqs
-
-def defrag_and_clean_url(url: str, base_url: str) -> str:
-    """Defragment a :url:
-
-    :param url: The URL to defragment (could be a reference or absolute)
-    :param base_url: The URL of the page where you found :url:"
-    """
-    return urldefrag(urljoin(base_url, url))[0]
-
-# TODO: move all of the above functions to helper_functions.py
-
 visited_urls: set[str] = set()
+visited_checksums: set[int] = set()
+visited_simhashes: set[int] = set()
 
 def scraper(url, resp):
     links: list = extract_next_links(url, resp)
@@ -77,8 +45,11 @@ def extract_next_links(base_url, resp):
     if len(text) < PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE:
         return list()
 
-    if is_exact_match(text) or is_simhash_match(frequencies):
+    if is_exact_match(text, visited_checksums) or is_simhash_match(frequencies):
         return list()
+    else:
+        visited_checksums.add(fletcher_checksum(text))
+        # TODO: visited_simhashes.add(...(frequencies))
 
     return list(urls)
 
