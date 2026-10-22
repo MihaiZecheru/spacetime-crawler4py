@@ -19,13 +19,13 @@ def extract_next_links(url, resp):
     # Handle defragmentation of URLs, 
     # filter out little/no text pages, near/true dupes, bad statuses
 
-    # true dupes check using checksum
+    # TODO: true dupes check using checksum
 
 
-    # near dupes check using SimHash
+    # TODO: near dupes check using SimHash
 
 
-    # bad status check
+    # TODO: bad status check
     if (resp.status != 200):
         pass
 
@@ -36,7 +36,7 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
 
-    # Handle domain restrictions and traps
+    # TODO: handle domain restrictions and traps
 
     try:
         parsed = urlparse(url)
