@@ -55,7 +55,7 @@ def calculate_checksum(content: list[str]) -> int:
             wordsum = (wordsum + ord(character)) % MODULUS # sum of all characters
             ordersum = (ordersum + wordsum) % MODULUS      # sum of running sums
 
-    return (ordersum << 32) | wordsum # pack both 32-bit sums into one 64-bit integer
+    return (ordersum << 32) | wordsum # pack 32-bit sums into one 64-bit integer
 
 def is_exact_match(content: list[str], checksums: set[int]) -> bool:
     '''
