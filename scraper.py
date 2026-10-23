@@ -2,6 +2,7 @@ import re
 from helper_functions import *
 
 PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE: int = 50
+MAX_PAGE_CONTENT_BYTES: int = 5 * 1024 * 1024 # 5MB
 
 visited_urls: set[str] = set()
 visited_checksums: set[int] = set()
@@ -47,6 +48,11 @@ def extract_next_links(base_url, resp):
         print_red("DNP: Not a text/html page")
         return list()
 
+    # Skip very large files
+    if len(resp.raw_response.content) > MAX_PAGE_CONTENT_BYTES:
+        print_red("DNP: Page too large")
+        return list()
+
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
     text: list[str] = get_text_in_page(soup)
     # Use resp.raw_response.url instead of base_url here to scrape the redirect instead of the original URL
@@ -83,7 +89,7 @@ def is_valid(url):
 
         # Handle domain restrictions
         if not re.match(
-            r"^.*ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu(.*)$",
+            r".*ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu(.*)$",
             parsed.netloc
         ): return False
 
