@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 # specify 64-bit simhashes
 SIMHASH_BIT_COUNT: int = 64
 # with a 64-bit simhash, a threshold of 3 maps to 95.3% similarity. 6 maps to 90.6% similarity.
-SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 6
+SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 3
 
 
 # Misc. helper functions 
@@ -35,31 +35,27 @@ def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
 def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
     freqs = {}
     for word in words:
-        count = freqs.get(word)
-        if count:
-            freqs[word] += 1
-        else:
-            freqs[word] = 0
+        freqs[word] = freqs.get(word, 0) + 1 # default to 0 on first sight, then add 1
     return freqs
-
 
 # Checksum functions
 def calculate_checksum(content: list[str]) -> int:
     '''
-    Converts content into a checksum using Fletcher-16 method. 
+    Converts content into a checksum using Fletcher-64 method. 
 
     :param content: list of words
     '''
+    MODULUS: int = 0xFFFFFFFF # 2^32 - 1
     wordsum: int = 0
     ordersum: int = 0
 
     for word in content:
-        word += '\0'
+        word += '\0' # separator, so "ab", "c" != "a", "bc"
         for character in word: 
-            wordsum += ord(character)
-            ordersum += wordsum
+            wordsum = (wordsum + ord(character)) % MODULUS # sum of all characters
+            ordersum = (ordersum + wordsum) % MODULUS      # sum of running sums
 
-    return ((ordersum % 255) << 8) | (wordsum % 255)
+    return (ordersum << 32) | wordsum # pack both 32-bit sums into one 64-bit integer
 
 def is_exact_match(content: list[str], checksums: set[int]) -> bool:
     '''
