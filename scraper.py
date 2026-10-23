@@ -44,7 +44,8 @@ def extract_next_links(base_url, resp):
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
     text: list[str] = get_text_in_page(soup)
-    urls: list[str] = [defrag_and_clean_url(url, base_url) for url in get_urls_in_page(soup)]
+    # Use resp.raw_response.url instead of base_url here to scrape the redirect instead of the original URL
+    urls: list[str] = [defrag_and_clean_url(url, resp.raw_response.url) for url in get_urls_in_page(soup)]
     frequencies = calculate_word_frequencies(text)
     
     if len(text) < PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE:
