@@ -33,8 +33,12 @@ def extract_next_links(base_url, resp):
     # filter out little/no text pages, near/true dupes, bad statuses
 
     visited_urls.add(base_url)
-    if (resp.status != 200):
+    if resp.status != 200:
         print_red("ERROR:", base_url, resp.error)
+        return list()
+
+    # Check for empty pages
+    if resp.status == 200 and resp.raw_response is None:
         return list()
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
