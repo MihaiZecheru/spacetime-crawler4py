@@ -39,6 +39,7 @@ def extract_next_links(base_url, resp):
 
     # Check for empty pages
     if resp.status == 200 and resp.raw_response is None:
+        print_red("Empty page")
         return list()
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
@@ -47,14 +48,18 @@ def extract_next_links(base_url, resp):
     frequencies = calculate_word_frequencies(text)
     
     if len(text) < PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE:
+        print_red("Low-text page")
         return list()
 
     if is_exact_match(text, visited_checksums) or is_simhash_match(frequencies, visited_simhashes):
+        print("Similar/exact page already scraped")
         return list()
     else:
         visited_checksums.add(calculate_checksum(text))
         # TODO: visited_simhashes.add(calculate_simhash(frequencies))
 
+    # Green text
+    print("\033[32mSuccessfully scraped\033[0m")
     return list(urls)
 
 def is_valid(url):
