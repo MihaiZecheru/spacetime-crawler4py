@@ -1,61 +1,21 @@
 from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup
+import hashlib
 
 # specify 64-bit simhashes
 SIMHASH_BIT_COUNT: int = 64
 # with a 64-bit simhash, a threshold of 3 maps to 95.3% similarity. 6 maps to 90.6% similarity.
 SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 3
 
+""" HASHING FUNCTIONS BELOW """
 
-# Misc. helper functions 
-def print_red(*args, **kwargs) -> None:
-    message = " ".join(str(a) for a in args)
-    print(f"\033[31m{message}\033[0m", **kwargs)
-
-def get_text_in_page(soup: BeautifulSoup):
-    return soup.get_text(separator=" ", strip=True).split(" ")
-
-def defrag_and_clean_url(url: str, base_url: str) -> str:
-    """Defragment a :url:
-
-    :param url: The URL to defragment (could be a reference or absolute)
-    :param base_url: The URL of the page where you found :url:"
-    """
-    return urldefrag(urljoin(base_url, url))[0]
-
-def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
-    """Get all the <a>.href that's in the page using beautiful soup"""
-    urls = []
-    for anchor in soup.find_all("a"):
-        url = anchor.get("href")
-        if (url):
-            urls.append(url)
-    return urls
-
-def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
-    freqs = {}
-    for word in words:
-        freqs[word] = freqs.get(word, 0) + 1 # default to 0 on first sight, then add 1
-    return freqs
-
-# Checksum functions
 def calculate_checksum(content: list[str]) -> int:
     '''
-    Converts content into a checksum using Fletcher-64 method. 
+    Converts content into a checksum using SHA256. 
 
     :param content: list of words
     '''
-    MODULUS: int = 0xFFFFFFFF # 2^32 - 1
-    wordsum: int = 0
-    ordersum: int = 0
-
-    for word in content:
-        word += '\0' # separator, so "ab", "c" != "a", "bc"
-        for character in word: 
-            wordsum = (wordsum + ord(character)) % MODULUS # sum of all characters
-            ordersum = (ordersum + wordsum) % MODULUS      # sum of running sums
-
-    return (ordersum << 32) | wordsum # pack 32-bit sums into one 64-bit integer
+    return hashlib.sha256("\0".join(content).encode("utf-8")).hexdigest()
 
 def is_exact_match(content: list[str], checksums: set[int]) -> bool:
     '''
@@ -67,12 +27,8 @@ def is_exact_match(content: list[str], checksums: set[int]) -> bool:
     :param content: list of words
     :param checksums: set of checksums
     '''
-    checksum: int = calculate_checksum(content)
+    return calculate_checksum(content) in checksums
 
-    return checksum in checksums
-
-
-# Simhash functions
 def _hash_word(word: str) -> int:
     # hash() is stable within a session
     return hash(word) & 0xFFFFFFFFFFFFFFFF # mask to get a non-negative 64-bit value
@@ -115,8 +71,39 @@ def is_simhash_match(content: dict[str, int], simhashes: set[int]) -> bool:
     :param simhashes: set of simhashes, stored as integers
     '''
     simhash: int = calculate_simhash(content) # fetch simhash of content
-
     for existing in simhashes:
         if _hamming_distance(simhash, existing) <= SIMHASH_BIT_DIFFERENCE_THRESHOLD:
             return True
     return False
+
+""" MISC. HELPER FUNCTIONS BELOW """
+
+def print_red(*args, **kwargs) -> None:
+    message = " ".join(str(a) for a in args)
+    print(f"\033[31m{message}\033[0m", **kwargs)
+
+def get_text_in_page(soup: BeautifulSoup):
+    return soup.get_text(separator=" ", strip=True).split(" ")
+
+def defrag_and_clean_url(url: str, base_url: str) -> str:
+    """Defragment a :url:
+
+    :param url: The URL to defragment (could be a reference or absolute)
+    :param base_url: The URL of the page where you found :url:"
+    """
+    return urldefrag(urljoin(base_url, url))[0]
+
+def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
+    """Get all the <a>.href that's in the page using beautiful soup"""
+    urls = []
+    for anchor in soup.find_all("a"):
+        url = anchor.get("href")
+        if (url):
+            urls.append(url)
+    return urls
+
+def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
+    freqs = {}
+    for word in words:
+        freqs[word] = freqs.get(word, 0) + 1 # default to 0 on first sight, then add 1
+    return freqs
