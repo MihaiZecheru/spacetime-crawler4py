@@ -23,13 +23,13 @@ def download(url, config, logger=None):
                 logger.warning(f"Cache server unreachable ({e.__class__.__name__}) for {url}. "
                                f"Retrying in {RETRY_DELAY_SECONDS}s.")
             time.sleep(RETRY_DELAY_SECONDS)
-        try:
-            if resp and resp.content:
-                return Response(cbor.loads(resp.content))
-        except (EOFError, ValueError) as e:
-            pass
-        logger.error(f"Spacetime Response error {resp} with url {url}.")
-        return Response({
-            "error": f"Spacetime Response error {resp} with url {url}.",
-            "status": resp.status_code,
-            "url": url})
+    try:
+        if resp and resp.content:
+            return Response(cbor.loads(resp.content))
+    except (EOFError, ValueError) as e:
+        pass
+    logger.error(f"Spacetime Response error {resp} with url {url}.")
+    return Response({
+        "error": f"Spacetime Response error {resp} with url {url}.",
+        "status": resp.status_code,
+        "url": url})
