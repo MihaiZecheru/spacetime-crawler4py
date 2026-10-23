@@ -35,7 +35,7 @@ def calculate_word_frequencies(words: list[str]) -> dict[str, int]:
         if count:
             freqs[word] += 1
         else:
-            freqs[word] = 0
+            freqs[word] = 1
     return freqs
 
 def calculate_checksum(content: list[str]) -> int:
