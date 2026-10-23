@@ -49,7 +49,7 @@ def extract_next_links(base_url, resp):
         return list()
     else:
         visited_checksums.add(calculate_checksum(text))
-        # TODO: visited_simhashes.add(calculate_simhash(frequencies))
+        visited_simhashes.add(calculate_simhash(frequencies))
 
     return list(urls)
 
