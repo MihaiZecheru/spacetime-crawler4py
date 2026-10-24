@@ -46,7 +46,7 @@ def extract_next_links(base_url, resp):
         return list()
 
     # Ignore non text/html pages that got through is_valid()
-    if "text/html" not in resp.raw_response.headers.get("Content-Type", ""):
+    if "text/html" not in resp.raw_response.headers.get("Content-Type", "").lower():
         print_red("DNP: Not a text/html page", base_url)
         return list()
 
@@ -64,7 +64,7 @@ def extract_next_links(base_url, resp):
         visited_urls.add(final_url)
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
-    # Use resp.raw_response.url instead of base_url here to scrape the redirect instead of the original URL
+    # Use final_url instead of base_url here to scrape the redirect instead of the original URL
     urls: list[str] = [defrag_and_clean_url(url, final_url) for url in get_urls_in_page(soup)]
     text: list[str] = get_text_in_page(soup)
 
@@ -106,7 +106,7 @@ def is_valid(url):
             return False
 
         # skip empty domains and incorrectly-formatted host URLs, using DOMAIN_RE regex filter
-        if not DOMAIN_RE.match(("" or parsed.hostname).lower()):
+        if not DOMAIN_RE.match((parsed.hostname or "").lower()):
             return False
 
 # TODO: finish trap handling      
