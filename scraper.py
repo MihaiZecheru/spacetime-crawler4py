@@ -30,7 +30,7 @@ def extract_next_links(base_url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
 
-    # Handle defragmentation of URLs, 
+    # Handle defragmentation of URLs, redirect content type check, size limit,
     # filter out little/no text pages, near/true dupes, bad statuses
 
     visited_urls.add(base_url)
