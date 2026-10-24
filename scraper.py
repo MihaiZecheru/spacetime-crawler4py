@@ -35,43 +35,54 @@ def extract_next_links(base_url, resp):
 
     visited_urls.add(base_url)
     if resp.status != 200:
-        print_red("DNP:", base_url, resp.error)
+        print_red("DNP: Bad status", base_url, resp.error)
         return list()
 
     # Check for empty pages
-    if resp.status == 200 and (resp.raw_response is None or not resp.raw_response.content):
-        print_red("DNP: Empty page")
+    if resp.raw_response is None or not resp.raw_response.content:
+        print_red("DNP: Empty page", base_url)
         return list()
 
     # Ignore non text/html pages that got through is_valid()
     if "text/html" not in resp.raw_response.headers.get("Content-Type", ""):
-        print_red("DNP: Not a text/html page")
+        print_red("DNP: Not a text/html page", base_url)
         return list()
 
     # Skip very large files
     if len(resp.raw_response.content) > MAX_PAGE_CONTENT_BYTES:
-        print_red("DNP: Page too large")
+        print_red("DNP: Page too large", base_url)
         return list()
+
+    # Validate the redirect target and mark it visited
+    final_url = urldefrag(resp.raw_response.url)[0]
+    if final_url != base_url:
+        if not is_valid(final_url):  # outside domain, trap, or already crawled
+            print_red("DNP: Bad/duplicate redirect", base_url, "->", final_url)
+            return list()
+        visited_urls.add(final_url)
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
-    text: list[str] = get_text_in_page(soup)
     # Use resp.raw_response.url instead of base_url here to scrape the redirect instead of the original URL
-    urls: list[str] = [defrag_and_clean_url(url, resp.raw_response.url) for url in get_urls_in_page(soup)]
-    frequencies = calculate_word_frequencies(text)
-    
+    urls: list[str] = [defrag_and_clean_url(url, final_url) for url in get_urls_in_page(soup)]
+    text: list[str] = get_text_in_page(soup)
+
+    # Skip low-text files
     if len(text) < PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE:
-        print_red("DNP: Low-text page")
+        print_red("DNP: Low-text page", base_url)
         return list()
 
+    frequencies = calculate_word_frequencies(text)
+
     if is_exact_match(text, visited_checksums) or is_simhash_match(frequencies, visited_simhashes):
-        print("DNP: Similar/exact page already scraped")
+        print("DNP: Similar/exact page already scraped", base_url)
         return list()
     else:
         visited_checksums.add(calculate_checksum(text))
-        # TODO: visited_simhashes.add(calculate_simhash(frequencies))
+        visited_simhashes.add(calculate_simhash(frequencies))
 
     # Green text
-    print("\033[32mSuccessfully scraped\033[0m")
+    print("\033[32mSuccessfully scraped\033[0m", base_url,
+        f"(redirect to {final_url})" if final_url != base_url else "")
     return list(urls)
 
 def is_valid(url):
