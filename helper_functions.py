@@ -1,15 +1,23 @@
 from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup
+import re
 
 # with a 64-bit simhash, a threshold of 3 maps to 95.3% similarity. 6 maps to 90.6% similarity.
 SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 3
+# word definition; turns non-lowercase or digit into separators.
+TOKEN_RE = re.compile(r"[a-z0-9]+") 
 
 def print_red(*args, **kwargs) -> None:
     message = " ".join(str(a) for a in args)
     print(f"\033[31m{message}\033[0m", **kwargs)
 
-def get_text_in_page(soup: BeautifulSoup):
-    return soup.get_text(separator=" ", strip=True).split(" ")
+def get_text_in_page(soup: BeautifulSoup) -> list[str]:
+    # delete any script, style, and noscript tags from the parsing
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+
+    # apply TOKEN_RE word definition to text extracted by soup and return the processed text
+    return TOKEN_RE.findall(soup.get_text(separator=" ").lower())
 
 def defrag_and_clean_url(url: str, base_url: str) -> str:
     """Defragment a :url:
