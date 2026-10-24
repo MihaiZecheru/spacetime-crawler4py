@@ -119,20 +119,20 @@ def is_valid(url):
         if len(url) > 200:
             return False
 
-        # skip paths w/ segments repeated 3+ times (e.g. /a/b/a/b/a/b/) 
+        # skip paths w/ segments repeated 3+ times like /a/b/a/b/a/b/
         segments = [s for s in path.split("/") if s] # split segments, drop empty segments
         if any(segments.count(s) >= 3 for s in set(segments)):
             return False
 
-        # 
+        # skip calendar, date, archive, etc. pages like /2023/05 or /2023/05/17
         if re.fullmatch(r"/\d{4}/\d{1,2}(/\d{1,2})?/?", path):
             return False
 
-        # 
+        # skip endless page loops like /page/2, /page/3
         if re.search(r"/page/\d+", path):
             return False
 
-        # 
+        # skip date-like query values like ?date=2023-05-17 attached to calendar-like pages 
         if re.search(r"\d{4}-\d{1,2}(-\d{1,2})?", query):
             return False
 
