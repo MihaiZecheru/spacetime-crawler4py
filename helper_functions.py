@@ -100,7 +100,13 @@ def defrag_and_clean_url(url: str, base_url: str) -> str:
     :param url: The URL to defragment (could be a reference or absolute)
     :param base_url: The URL of the page where you found :url:"
     """
-    return urldefrag(urljoin(base_url, url))[0]
+    # attempt to defrag the URL
+    try:
+        return urldefrag(urljoin(base_url, url))[0]
+
+    # catch errors caused by malformed URLs, returning a null URL that is handled by scraper.py
+    except ValueError:
+        return ""
 
 def get_urls_in_page(soup: BeautifulSoup) -> list[str]:
     """Get all the <a>.href that's in the page using beautiful soup"""
