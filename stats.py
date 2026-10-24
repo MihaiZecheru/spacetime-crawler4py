@@ -55,7 +55,7 @@ def save_state() -> None:
                 "word_counts": dict(word_counts),
                 "visited_urls": list(urls),
                 "checksums": list(checksums),
-                "simhashes": [f"{s:064x}" for s in simhashes], # 256-bit int as hexadecimal
+                "simhashes": [f"{s:064x}" for s in list(simhashes)], # 256-bit int as hexadecimal
             }
             tmp = STATS_FILE + ".tmp"
             with open(tmp, "w") as f:
