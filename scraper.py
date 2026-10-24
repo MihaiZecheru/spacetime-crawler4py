@@ -1,5 +1,6 @@
 import re
 from helper_functions import *
+import stats
 
 PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE: int = 50
 MAX_PAGE_CONTENT_BYTES: int = 5 * 1024 * 1024 # 5MB
@@ -10,7 +11,12 @@ visited_urls: set[str] = set()
 visited_checksums: set[str] = set()
 visited_simhashes: set[int] = set()
 
+# if there's a save, load data into the values, + enable save-at-exit
+stats.init(visited_urls, visited_checksums, visited_simhashes)  
+
 def scraper(url, resp):
+    stats.tick() # increment stats.py tick counter for save purposes
+
     try:
         links: list = extract_next_links(url, resp)
     
@@ -70,6 +76,9 @@ def extract_next_links(base_url, resp):
             return list()
         visited_urls.add(final_url)
 
+    # sends clean url to stats.py's set named unique_pages, even if it's low-text or duplicate (Q2 requirement)
+    stats.record_unique_page(final_url) 
+
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
     # Use final_url instead of base_url here to scrape the redirect instead of the original URL
     urls: list[str] = [defrag_and_clean_url(url, final_url) for url in get_urls_in_page(soup)]
@@ -88,6 +97,8 @@ def extract_next_links(base_url, resp):
     else:
         visited_checksums.add(calculate_checksum(text))
         visited_simhashes.add(calculate_simhash(frequencies))
+        # sends non-duplicate page's text content to stats.py for tracking purposes
+        stats.record_page_content(final_url, text)  
 
     # Green text
     print("\033[32mSuccessfully scraped\033[0m", base_url,
