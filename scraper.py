@@ -3,6 +3,8 @@ from helper_functions import *
 
 PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE: int = 50
 MAX_PAGE_CONTENT_BYTES: int = 5 * 1024 * 1024 # 5MB
+# regex domain filter, allowing any subdomain, restricted domains, and required top-domains.
+DOMAIN_RE = re.compile(r"^(?:[a-z0-9-]+\.)*(ics|cs|informatics|stat)\.uci\.edu$")
 
 visited_urls: set[str] = set()
 visited_checksums: set[int] = set()
@@ -90,7 +92,12 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
 
+    # skip already-visited URLs
     if url in visited_urls:
+        return False
+
+    # skip non-ASCII URLs
+    if not url.isascii():
         return False
 
     try:
@@ -98,11 +105,9 @@ def is_valid(url):
         if parsed.scheme not in ("http", "https"):
             return False
 
-        # Handle domain restrictions
-        if not re.match(
-            r".*ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu(.*)$",
-            parsed.netloc
-        ): return False
+        # skip empty domains and incorrectly-formatted host URLs, using DOMAIN_RE regex filter
+        if not DOMAIN_RE.match(("" or parsed.hostname).lower()):
+            return False
 
 # TODO: finish trap handling      
 # ** Handle traps section **
