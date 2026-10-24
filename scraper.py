@@ -11,7 +11,14 @@ visited_checksums: set[str] = set()
 visited_simhashes: set[int] = set()
 
 def scraper(url, resp):
-    links: list = extract_next_links(url, resp)
+    try:
+        links: list = extract_next_links(url, resp)
+    
+    # General exception catch to resist crashes
+    except Exception as e: 
+        print_red("DNP: Exception while scraping", url, repr(e))
+        return []
+    
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(base_url, resp):
@@ -33,7 +40,7 @@ def extract_next_links(base_url, resp):
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
 
     # Handle defragmentation of URLs, redirect content type check, size limit,
-    # filter out little/no text pages, near/true dupes, bad statuses
+    # filter out little/no text pages, near/true dupes, bad statuses,
 
     visited_urls.add(base_url)
     if resp.status != 200:
