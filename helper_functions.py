@@ -2,10 +2,10 @@ from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup
 import hashlib
 
-# specify 64-bit simhashes
-SIMHASH_BIT_COUNT: int = 64
-# with a 64-bit simhash, a threshold of 3 maps to 95.3% similarity. 6 maps to 90.6% similarity.
-SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 3
+# specify 256-bit simhashes
+SIMHASH_BIT_COUNT: int = 256
+# with a 256 simhash, 12 bits = ~95.3% similarity, and 24 bits = ~90.6%
+SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 12
 
 """ HASHING FUNCTIONS BELOW """
 
@@ -20,16 +20,19 @@ def calculate_checksum(content: list[str]) -> str:
 def is_exact_match(content: list[str], checksums: set[str]) -> bool:
     '''
     Compares the content's checksum to a list of existing checksums.
-    - If there's a high similarity match, return True, otherwise False.
+    - If there's an exact match, return True, otherwise False.
 
     :param content: list of words
     :param checksums: set of checksums
     '''
     return calculate_checksum(content) in checksums
 
+
 def _hash_word(word: str) -> int:
-    # hash() is stable within a session
-    return hash(word) & 0xFFFFFFFFFFFFFFFF # mask to get a non-negative 64-bit value
+    # convert word into a 256-bit bytes using SHA256.
+    digest = hashlib.sha256(word.encode("utf-8")).digest()
+    # convert bytes into integer, first byte being MSB.
+    return int.from_bytes(digest, "big")
 
 def _hamming_distance(newSim: int, existingSim: int) -> int:
     '''returns how many bits are different in the simhashes.'''
@@ -52,7 +55,7 @@ def calculate_simhash(content: dict[str, int]) -> int:
             else:                   # else:
                 counters[i] -= freq # decrement the counter at index i by freq
 
-    # generate a 64-bit fingerprint by turning all positives to 1. Default is 0. 
+    # generate a SIMHASH_BIT_COUNT-bit fingerprint by turning all positives to 1. Default is 0. 
     simhash: int = 0
     for i in range(SIMHASH_BIT_COUNT):
         if counters[i] > 0:     # if the counter is positive:
@@ -62,7 +65,7 @@ def calculate_simhash(content: dict[str, int]) -> int:
 def is_simhash_match(content: dict[str, int], simhashes: set[int]) -> bool:
     '''
     Compares the content's simhash to a list of existing simhashes.
-    - If it exceeds any simhashes' SIMHASH_BIT_DIFFERENCE_THRESHOLD, return True.
+    - If the amount of different bits <= SIMHASH_BIT_DIFFERENCE_THRESHOLD (too similar), return True.
     - Else, return False.
     
     :param content: dict of words with frequencies
