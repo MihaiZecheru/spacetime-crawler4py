@@ -7,7 +7,7 @@ MAX_PAGE_CONTENT_BYTES: int = 5 * 1024 * 1024 # 5MB
 DOMAIN_RE = re.compile(r"^(?:[a-z0-9-]+\.)*(ics|cs|informatics|stat)\.uci\.edu$")
 
 visited_urls: set[str] = set()
-visited_checksums: set[int] = set()
+visited_checksums: set[str] = set()
 visited_simhashes: set[int] = set()
 
 def scraper(url, resp):
