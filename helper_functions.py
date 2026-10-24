@@ -9,7 +9,7 @@ SIMHASH_BIT_DIFFERENCE_THRESHOLD: int = 3
 
 """ HASHING FUNCTIONS BELOW """
 
-def calculate_checksum(content: list[str]) -> int:
+def calculate_checksum(content: list[str]) -> str:
     '''
     Converts content into a checksum using SHA256. 
 
@@ -17,13 +17,11 @@ def calculate_checksum(content: list[str]) -> int:
     '''
     return hashlib.sha256("\0".join(content).encode("utf-8")).hexdigest()
 
-def is_exact_match(content: list[str], checksums: set[int]) -> bool:
+def is_exact_match(content: list[str], checksums: set[str]) -> bool:
     '''
     Compares the content's checksum to a list of existing checksums.
-    - If there's a match, return True.
-    - If there's no match, return False.
-    - Due to Fletcher-16's modulus, false positives may occur with a len(checksums)/65,025 chance.
-    
+    - If there's a high similarity match, return True, otherwise False.
+
     :param content: list of words
     :param checksums: set of checksums
     '''
