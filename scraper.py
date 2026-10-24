@@ -76,7 +76,7 @@ def extract_next_links(base_url, resp):
     frequencies = calculate_word_frequencies(text)
 
     if is_exact_match(text, visited_checksums) or is_simhash_match(frequencies, visited_simhashes):
-        print("DNP: Similar/exact page already scraped", base_url)
+        print_red("DNP: Similar/exact page already scraped", base_url)
         return list()
     else:
         visited_checksums.add(calculate_checksum(text))
@@ -109,17 +109,31 @@ def is_valid(url):
         if not DOMAIN_RE.match((parsed.hostname or "").lower()):
             return False
 
-# TODO: finish trap handling      
+# TODO: tweak what queries should be marked as a trap through test run data
 # ** Handle traps section **
-        # Possible calendar blocker - might not be good because of sites like these:
-        # https://ics.uci.edu/2022/06/27/ics-project-expo-strengthens-industry-engagement-and-showcases-student-talent/
-        # It's like a newsletter, so it might be worth scraping and might not cause an infinte loop,
-        # unless there's a way to keep advancing the day +1 and -1 infinetely
-        if re.match(r"\/\d+\/\d+\/\d+\/", parsed.path.lower()):
+        # separate path from query sections for later use
+        path = parsed.path.lower()
+        query = parsed.query.lower()
+
+        # skip 200+ length URLs, since they may be traps
+        if len(url) > 200:
             return False
 
-        # Prevent infinite pagination by stopping "/page/3" URLs
-        if re.match(r"\/page\/\d+\/?", parsed.path.lower()):
+        # skip paths w/ segments repeated 3+ times (e.g. /a/b/a/b/a/b/) 
+        segments = [s for s in path.split("/") if s] # split segments, drop empty segments
+        if any(segments.count(s) >= 3 for s in set(segments)):
+            return False
+
+        # 
+        if re.fullmatch(r"/\d{4}/\d{1,2}(/\d{1,2})?/?", path):
+            return False
+
+        # 
+        if re.search(r"/page/\d+", path):
+            return False
+
+        # 
+        if re.search(r"\d{4}-\d{1,2}(-\d{1,2})?", query):
             return False
 
 # ** End of handle traps section **
