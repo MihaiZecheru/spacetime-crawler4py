@@ -76,7 +76,7 @@ def extract_next_links(base_url, resp):
             return list()
         visited_urls.add(final_url)
 
-    # sends clean url to stats.py's set named unique_pages, even if it's low-text or duplicate (Q2 requirement)
+    # sends clean url to stats.py's set named unique_pages, even if it's low-text or duplicate (Q1 requirement)
     stats.record_unique_page(final_url) 
 
     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
