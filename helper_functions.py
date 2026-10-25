@@ -1,4 +1,4 @@
-from urllib.parse import urlparse, urljoin, urldefrag
+from urllib.parse import urlparse, urljoin, urldefrag, urlencode, urlunparse, parse_qsl
 from bs4 import BeautifulSoup
 import re
 import hashlib
@@ -100,9 +100,11 @@ def defrag_and_clean_url(url: str, base_url: str) -> str:
     :param url: The URL to defragment (could be a reference or absolute)
     :param base_url: The URL of the page where you found :url:"
     """
-    # attempt to defrag the URL
     try:
-        return urldefrag(urljoin(base_url, url))[0]
+        # Sort the query params so that re-ordering them doesn't count as a new URL
+        parsed = urlparse(urldefrag(urljoin(base_url, url))[0])
+        query = urlencode(sorted(parse_qsl(parsed.query, keep_blank_values=True)))
+        return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), parsed.path, parsed.params, query, ""))
 
     # catch errors caused by malformed URLs, returning a null URL that is handled by scraper.py
     except ValueError:
