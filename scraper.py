@@ -1,6 +1,7 @@
 import re
 from helper_functions import *
 import stats
+from collections import defaultdict
 
 PAGE_TEXT_THRESHOLD_FOR_ACCEPTANCE: int = 50
 MAX_PAGE_CONTENT_BYTES: int = 5 * 1024 * 1024 # 5MB
@@ -10,6 +11,11 @@ DOMAIN_RE = re.compile(r"^(?:[a-z0-9-]+\.)*(ics|cs|informatics|stat)\.uci\.edu$"
 visited_urls: set[str] = set()
 visited_checksums: set[str] = set()
 visited_simhashes: set[int] = set()
+
+MAX_QUERY_VARIANTS_PER_PATH: int = 10
+# accepted URLs per (host + path) that differ only by query string
+# used to prevent more than X requests to the same page just with different query string
+query_variants: defaultdict[str, set[str]] = defaultdict(set)
 
 # if there's a save, load data into the values, + enable save-at-exit
 stats.init(visited_urls, visited_checksums, visited_simhashes)  
@@ -168,6 +174,14 @@ def is_valid(url):
         # skip event calendar views
         if re.search(r"/events/(list|week|month|today|day)(/|$)", path):
             return False
+
+        # cap URLs per (host + path) that differ only by query string
+        if query:
+            variants = query_variants[f"{parsed.hostname}{path}"]
+            if url not in variants:
+                if len(variants) >= MAX_QUERY_VARIANTS_PER_PATH:
+                    return False
+                variants.add(url)
 
 # ** End of handle traps section **
 
