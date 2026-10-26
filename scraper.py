@@ -196,10 +196,10 @@ def is_valid(url):
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
     except TypeError:
-        print_red("TypeError for ", parsed)
+        print_red("TypeError for ", url)
         return False
     except ValueError:
         # Skipped due to malformed URL or other
         # Skips the URL instead of crashing or throwing an error
-        print_red("Skipped:", parsed)
+        print_red("Skipped:", url)
         return False
