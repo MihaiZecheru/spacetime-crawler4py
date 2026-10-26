@@ -12,7 +12,7 @@ visited_urls: set[str] = set()
 visited_checksums: set[str] = set()
 visited_simhashes: set[int] = set()
 
-MAX_QUERY_VARIANTS_PER_PATH: int = 10
+MAX_QUERY_VARIANTS_PER_PATH: int = 40 # 10 was too little
 # accepted URLs per (host + path) that differ only by query string
 # used to prevent more than X requests to the same page just with different query string
 query_variants: defaultdict[str, set[str]] = defaultdict(set)
