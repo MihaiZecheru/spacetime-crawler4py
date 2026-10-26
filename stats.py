@@ -80,3 +80,17 @@ def init(urls: set, checksums: set, simhashes: set) -> None:
         checksums.update(d["checksums"])
         simhashes.update(int(h, 16) for h in d["simhashes"])
     atexit.register(save_state)
+
+# clears all stats and the scraper's visited sets, and deletes the STATS_FILE (stats.json) (used for --restart)
+def reset() -> None:
+    global _ticks
+    with _lock:
+        unique_pages.clear()
+        longest_page[:] = ["", 0]
+        word_counts.clear()
+        _ticks = 0
+        if _sets is not None:
+            for s in _sets:
+                s.clear()
+        if os.path.exists(STATS_FILE):
+            os.remove(STATS_FILE)
