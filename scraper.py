@@ -127,7 +127,6 @@ def is_valid(url):
         if not DOMAIN_RE.match((parsed.hostname or "").lower()):
             return False
 
-# TODO: tweak what queries should be marked as a trap through test run data
 # ** Handle traps section **
         # separate path from query sections for later use
         path = parsed.path.lower()
@@ -150,8 +149,24 @@ def is_valid(url):
         if re.search(r"/page/\d+", path):
             return False
 
-        # skip date-like query values like ?date=2023-05-17 attached to calendar-like pages 
+        # skip date-like query values like ?date=2023-05-17 attached to calendar-type pages 
         if re.search(r"\d{4}-\d{1,2}(-\d{1,2})?", query):
+            return False
+
+        # skip DokuWiki pages with a query string (revisions, diffs, edit/export actions)
+        if "doku.php" in path and query:
+            return False
+
+        # skip DokuWiki internals (media fetch, indexer, etc.)
+        if "/lib/exe/" in path:
+            return False
+
+        # skip calendar/export query traps
+        if any(s in query for s in ("tribe__", "eventdisplay", "ical=", "do=export")):
+            return False
+
+        # skip event calendar views
+        if re.search(r"/events/(list|week|month|today|day)(/|$)", path):
             return False
 
 # ** End of handle traps section **
